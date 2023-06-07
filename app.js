@@ -16,9 +16,8 @@ const reviewRouter = require('./routes/reviewRoutes');
 const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 
+// starting our app
 const app = express();
-
-// Middleware to set the Content Security Policy header
 
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
@@ -84,6 +83,7 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware to set the Content Security Policy header
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
