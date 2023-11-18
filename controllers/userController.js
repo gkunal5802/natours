@@ -13,6 +13,7 @@ const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const handlerFactory = require('./handlerFactory');
 
+// STORING THE UPLOADED FILE IN MEMORY BUFFER
 const multerStorage = multer.memoryStorage();
 
 const multerFilter = (req, file, cb) => {
@@ -38,10 +39,10 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
   req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
 
   await sharp(req.file.buffer)
-    .resize(500, 500)
+    .resize(500, 500) // passing height , width, options to set fit,center etc..
     .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(`public/img/users/${req.file.filename}`);
+    .jpeg({ quality: 90 }) // quality degrade to 90%. It compresses the img to save storage
+    .toFile(`public/img/users/${req.file.filename}`); // destination.
 
   next();
 });
@@ -87,12 +88,13 @@ exports.getMe = (req, res, next) => {
 };
 
 exports.updateMe = catchAsync(async (req, res, next) => {
+  // 1) Create Error, if user Posts password data
   if (req.body.password || req.body.passwordConfirm) {
     return next(
       new AppError(
         'This route is not for password updates. Please use /updateMyPassword.',
         400
-      )
+      ) // bad request
     );
   }
 
@@ -134,5 +136,7 @@ exports.createUser = (req, res) => {
     message: 'This route is not defined! Please use /signup instead',
   });
 };
+
+// DO NOT UPDATE THE PASSWORD WITH THIS!!
 exports.updateUser = handlerFactory.updateOne(User);
 exports.deleteUser = handlerFactory.deleteOne(User);

@@ -8,6 +8,7 @@ import { updateSettings } from './updateSettings.js';
 import { bookTour } from './stripe.js';
 import { showAlert } from './alert.js';
 
+// DOM ELEMENTS
 const body = document.querySelector('body');
 const mapBox = document.getElementById('map');
 const loginForm = document.querySelector('.form--login');
@@ -22,6 +23,7 @@ if (mapBox) {
   displayMap(locations);
 }
 
+// DELEGATION
 if (signUpForm) {
   signUpForm.addEventListener('submit', (e) => {
     e.preventDefault();

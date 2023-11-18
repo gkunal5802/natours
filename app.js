@@ -19,6 +19,7 @@ const bookingRouter = require('./routes/bookingRoutes');
 const bookingController = require('./controllers/bookingController');
 const viewRouter = require('./routes/viewRoutes');
 
+// starting the app
 const app = express();
 
 app.enable('trust proxy');
@@ -52,6 +53,7 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+// stripe webhook
 app.post(
   '/webhook-checkout',
   express.raw({ type: '*/*' }),
@@ -60,7 +62,6 @@ app.post(
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
-
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
@@ -83,15 +84,15 @@ app.use(
     ],
   })
 );
-
+// Will return a middleware function that is going to compress all the text that is sent to client
 app.use(compression());
 
 // Test middleware
-app.use((req, res, next) => {
-  req.requestTime = new Date().toISOString();
-  // console.log(req.cookies);
-  next();
-});
+// app.use((req, res, next) => {
+//   req.requestTime = new Date().toISOString();
+// console.log(req.cookies);
+//   next();
+// });
 
 // 3) ROUTES
 app.use('/', viewRouter);

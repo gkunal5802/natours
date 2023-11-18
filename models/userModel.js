@@ -51,10 +51,15 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// PRE MIDDLEWARE: used to modify the password after creating before saving it to the model.
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
+  // hashing the password with the cost of 12. It is called salting the password
   this.password = await bcrypt.hash(this.password, 12);
+
+  // delete confirm password field
   this.passwordConfirm = undefined;
   next();
 });
@@ -62,6 +67,7 @@ userSchema.pre('save', async function (next) {
 userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
 
+  // need to subtract 1000ms because there might be a possiblity that jwt is issued a little bit earlier than setting this password.
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });
@@ -71,6 +77,7 @@ userSchema.pre(/^find/, function (next) {
   next();
 });
 
+// it is an instance of user which can be accessed in any document
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   UserPassword
@@ -87,12 +94,15 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     return JWTTimestamp < changedTimestamp;
   }
 
+  // means password is not changed
   return false;
 };
 
 userSchema.methods.createPasswordResetToken = function () {
+  // just like a password which helps the user to create a new password.
   const resetToken = crypto.randomBytes(32).toString('hex');
 
+  // this needs to be hashed so that attacker can not access our database and change the password.
   this.passwordResetToken = crypto
     .createHash('sha256')
     .update(resetToken)
@@ -102,6 +112,7 @@ userSchema.methods.createPasswordResetToken = function () {
 
   return resetToken;
 };
-
+// model(name of model, model made from which schema)
 const User = mongoose.model('User', userSchema);
+
 module.exports = User;

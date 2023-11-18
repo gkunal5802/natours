@@ -24,6 +24,7 @@ const createSendToken = (user, statusCode, req, res) => {
 
   user.password = undefined;
 
+  // lets send data back to client
   res.status(statusCode).json({
     status: 'success',
     token,
@@ -34,6 +35,7 @@ const createSendToken = (user, statusCode, req, res) => {
 };
 
 exports.signUp = catchAsync(async (req, res, next) => {
+  // lets get data from request. newUser will await for the request to complete.
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
@@ -47,22 +49,25 @@ exports.signUp = catchAsync(async (req, res, next) => {
     `${req.protocol}://${req.get('host')}/me`
   ).sendWelcome();
 
+  // sign method requires (payload,secret string, options)
   createSendToken(newUser, 201, req, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
   const { password, email } = req.body;
-
+  // 1) check if email and password exist
   if (!password || !email) {
     return next(new AppError('Please provide email and password', 400));
   }
 
   const user = await User.findOne({ email }).select('+password');
 
+  // 2) check if user exists and password is correct
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401));
   }
 
+  // 3) If everything is ok, send token to client
   createSendToken(user, 200, req, res);
 });
 
@@ -75,8 +80,10 @@ exports.logout = (req, res) => {
   res.status(200).json({ status: 'success' });
 };
 
+// MIDDLEWARE: to protect the routes from accessing by anyone who is not logged in.
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
+  // 1) Getting the token and check if it exists
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
@@ -85,7 +92,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   } else if (req.cookies.jwt) {
     token = req.cookies.jwt;
   }
-  //1) Check if token exists
+
   if (!token)
     return next(
       new AppError('You are not logged in! Please log in to get access.', 401)
@@ -109,6 +116,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
   req.user = currentUser;
   res.locals.user = currentUser;
+  // GRANT ACCESS TO THE PROTECTED ROUTE
   next();
 });
 
@@ -131,6 +139,8 @@ exports.isLoggedIn = async (req, res, next) => {
       if (currentUser.changedPasswordAfter(decoded.iat)) {
         return next();
       }
+      // There is a LOGGED IN user. response.locals helps to access our user in all our files including pug files.
+
       res.locals.user = currentUser;
     }
   } catch (err) {
@@ -144,7 +154,7 @@ exports.restrictTo =
   (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return next(
-        new AppError('You do not have permission to perform this action', 403)
+        new AppError('You do not have permission to perform this action', 403) // 403: MEANS FORBIDDEN
       );
     }
 
@@ -188,6 +198,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 exports.resetPassword = catchAsync(async (req, res, next) => {
+  // 1) Get the user based on token
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
@@ -196,6 +207,8 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() },
   });
+
+  // 2) If token is not expired and there is user, set the new password.
   if (!user) {
     return next(new AppError('Token is invalid or has expired', 400));
   }
@@ -205,19 +218,24 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();
-
+  // 3) Change the passwordChangedAt property of user.
+  // 4) Log the user in, send JWT
   createSendToken(user, 200, req, res);
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
+  //  1) Get the user from collection
   const user = await User.findById(req.user.id).select('+password');
 
+  // 2) Check if posted current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password)))
     return next(new AppError('Your current password is wrong', 401));
 
+  // 3) update password
   user.password = req.body.newPassword;
   user.passwordConfirm = req.body.newPasswordConfirm;
   await user.save();
 
+  // 4) Log the user in, send JWT
   createSendToken(user, 200, req, res);
 });
