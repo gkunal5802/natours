@@ -18,8 +18,9 @@ this will start the server on `http://localhost:4000`
 
 The server will listen on port `4000` by default. You can also access the API at `http://localhost:4000/api/v1`.
 
-You can test with some test user-emails stored on the database like: "sophie10@example.com", "loulou@example.com" with a password of "test1234", or you can create a new user.
+You can test with some test user-emails stored on the database like: "admin@natours.io" with a password of "test1234", or you can create a new user.
 
+You can the hosted application using: [https://natours-kunal-cc1b1e910dfe.herokuapp.com/]
 ## Features and Functionality
 
 The Natours project includes the following features:
